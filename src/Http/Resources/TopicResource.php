@@ -1,0 +1,34 @@
+<?php
+
+namespace Asimnet\Notify\Http\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+/**
+ * API resource for notification topics.
+ */
+class TopicResource extends JsonResource
+{
+    /**
+     * Transform the resource into an array.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'slug' => $this->slug,
+            'description' => $this->description,
+            'is_public' => $this->is_public,
+            'subscriber_count' => $this->subscriber_count,
+            'is_subscribed' => $this->when(
+                $request->user(),
+                fn () => $this->isSubscribedByUser($request->user())
+            ),
+            'created_at' => $this->created_at?->toIso8601String(),
+        ];
+    }
+}

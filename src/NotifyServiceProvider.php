@@ -1,0 +1,176 @@
+<?php
+
+namespace Asimnet\Notify;
+
+use Asimnet\Notify\Events\DeviceTokenDeleted;
+use Asimnet\Notify\Events\DeviceTokenRegistered;
+use Asimnet\Notify\Events\TopicSubscribed;
+use Asimnet\Notify\Events\TopicUnsubscribed;
+use Asimnet\Notify\Listeners\CleanupDeletedDeviceFromFcm;
+use Asimnet\Notify\Listeners\SyncDeviceToDefaultTopics;
+use Asimnet\Notify\Listeners\SyncTopicSubscriptionToFcm;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Route;
+use Spatie\LaravelPackageTools\Commands\InstallCommand;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
+
+class NotifyServiceProvider extends PackageServiceProvider
+{
+    public static string $name = 'notify';
+
+    public function configurePackage(Package $package): void
+    {
+        $package
+            ->name(static::$name)
+            ->hasConfigFile()
+            ->hasTranslations()
+            ->hasViews()
+            ->hasMigration('create_notify_templates_table')
+            ->hasMigration('create_notify_campaigns_table')
+            ->hasMigration('create_notify_device_tokens_table')
+            ->hasMigration('create_notify_topics_table')
+            ->hasMigration('create_notify_topic_subscriptions_table')
+            ->hasMigration('create_notify_logs_table')
+            ->hasMigration('create_notify_segments_table')
+            ->hasMigration('create_notify_settings')
+            ->hasRoute('api')
+            ->hasCommand(\Asimnet\Notify\Console\Commands\ProcessScheduledNotifications::class)
+            ->hasInstallCommand(function (InstallCommand $command) {
+                $command
+                    ->publishConfigFile()
+                    ->publishMigrations()
+                    ->askToRunMigrations()
+                    ->askToStarRepoOnGitHub('asimnet/notify');
+            });
+    }
+
+    public function packageRegistered(): void
+    {
+        $this->app->singleton('notify', function ($app) {
+            return new NotifyManager($app);
+        });
+
+        // Register FcmService - use fake in testing, real implementation otherwise
+        $this->app->singleton(\Asimnet\Notify\Contracts\FcmService::class, function ($app) {
+            // Use fake service in testing environment
+            if ($app->environment('testing')) {
+                return new \Asimnet\Notify\Testing\FakeFcmService;
+            }
+
+            // Use real service with Firebase Messaging
+            // Requires kreait/laravel-firebase to be configured
+            if ($app->bound(\Kreait\Firebase\Contract\Messaging::class)) {
+                return new \Asimnet\Notify\Services\FcmMessageService(
+                    $app->make(\Kreait\Firebase\Contract\Messaging::class)
+                );
+            }
+
+            // Fallback to fake if Firebase not configured
+            return new \Asimnet\Notify\Testing\FakeFcmService;
+        });
+    }
+
+    public function packageBooted(): void
+    {
+        if (config('notify.horizon.enabled', true)) {
+            $this->registerHorizonQueues();
+        }
+
+        $this->registerEventListeners();
+        $this->registerRouteModelBindings();
+    }
+
+    /**
+     * Register route model bindings for package models.
+     */
+    protected function registerRouteModelBindings(): void
+    {
+        // Bind 'device' route parameter to DeviceToken model
+        Route::bind('device', function ($value) {
+            return \Asimnet\Notify\Models\DeviceToken::findOrFail($value);
+        });
+
+        // Bind 'topic' route parameter to Topic model
+        Route::bind('topic', function ($value) {
+            // Allow binding by ID or slug
+            $topic = \Asimnet\Notify\Models\Topic::find($value);
+
+            if (! $topic) {
+                $topic = \Asimnet\Notify\Models\Topic::where('slug', $value)->first();
+            }
+
+            if (! $topic) {
+                abort(404, __('notify::notify.error_topic_not_found'));
+            }
+
+            return $topic;
+        });
+    }
+
+    /**
+     * Register event listeners for FCM synchronization.
+     */
+    protected function registerEventListeners(): void
+    {
+        // Device token registered -> subscribe to default topics
+        Event::listen(
+            DeviceTokenRegistered::class,
+            SyncDeviceToDefaultTopics::class
+        );
+
+        // Device token deleted -> cleanup FCM subscriptions
+        Event::listen(
+            DeviceTokenDeleted::class,
+            CleanupDeletedDeviceFromFcm::class
+        );
+
+        // Topic subscribed -> sync with FCM
+        Event::listen(
+            TopicSubscribed::class,
+            [SyncTopicSubscriptionToFcm::class, 'handleSubscription']
+        );
+
+        // Topic unsubscribed -> sync with FCM
+        Event::listen(
+            TopicUnsubscribed::class,
+            [SyncTopicSubscriptionToFcm::class, 'handleUnsubscription']
+        );
+    }
+
+    /**
+     * Register notification queues with Laravel Horizon.
+     *
+     * This method merges the notify package's supervisor configuration
+     * into Horizon's existing configuration when Horizon is installed.
+     */
+    protected function registerHorizonQueues(): void
+    {
+        // Check if Horizon is installed by verifying the service provider is loaded
+        if (! $this->app->providerIsLoaded('Laravel\Horizon\HorizonServiceProvider')) {
+            return;
+        }
+
+        $supervisorConfig = config('notify.horizon.supervisor', []);
+
+        if (empty($supervisorConfig)) {
+            return;
+        }
+
+        // Merge the notification supervisor into Horizon's defaults
+        $currentDefaults = Config::get('horizon.defaults', []);
+        $currentDefaults['supervisor-notifications'] = $supervisorConfig;
+        Config::set('horizon.defaults', $currentDefaults);
+
+        // Merge into all environments
+        $environments = Config::get('horizon.environments', []);
+        foreach ($environments as $env => $supervisors) {
+            $environments[$env]['supervisor-notifications'] = array_merge(
+                $supervisorConfig,
+                $supervisors['supervisor-notifications'] ?? []
+            );
+        }
+        Config::set('horizon.environments', $environments);
+    }
+}
