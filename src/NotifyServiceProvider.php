@@ -25,22 +25,17 @@ class NotifyServiceProvider extends PackageServiceProvider
         $package
             ->name(static::$name)
             ->hasConfigFile()
+            ->hasViews()
             ->hasTranslations()
-            ->hasMigration('create_notify_templates_table')
-            ->hasMigration('create_notify_campaigns_table')
-            ->hasMigration('create_notify_device_tokens_table')
-            ->hasMigration('create_notify_topics_table')
-            ->hasMigration('create_notify_topic_subscriptions_table')
-            ->hasMigration('create_notify_logs_table')
             ->hasRoute('api')
             ->hasCommand(\Asimnet\Notify\Console\Commands\ProcessScheduledNotifications::class)
             ->hasInstallCommand(function (InstallCommand $command) {
                 $command
-                    ->publishConfigFile()
-                    ->publishMigrations()
-                    ->askToRunMigrations()
-                    ->askToStarRepoOnGitHub('asimnet/notify');
+                    ->publishConfigFile();
             });
+
+        // Note: Tenant migrations are loaded via config/tenancy.php migration_parameters
+        // Settings migrations are in packages/notify/database/migrations/ (central DB)
     }
 
     public function packageRegistered(): void

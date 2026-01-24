@@ -109,10 +109,6 @@ class ManageNotifySettings extends Page implements HasForms
                 'log_retention_days' => $settings->log_retention_days,
                 'log_store_payload' => $settings->log_store_payload,
 
-                // Queue Settings
-                'queue_connection' => $settings->queue_connection,
-                'queue_name' => $settings->queue_name,
-
                 // Rate Limiting
                 'rate_limit_per_minute' => $settings->rate_limit_per_minute,
                 'rate_limit_per_user_per_hour' => $settings->rate_limit_per_user_per_hour,
@@ -194,26 +190,6 @@ class ManageNotifySettings extends Page implements HasForms
                                     ]),
                             ]),
 
-                        // Queue Tab
-                        Tab::make('queue')
-                            ->label(__('notify::filament.settings.tabs.queue'))
-                            ->icon(Heroicon::QueueList)
-                            ->schema([
-                                Section::make(__('notify::filament.settings.sections.queue'))
-                                    ->description(__('notify::filament.settings.sections.queue_description'))
-                                    ->schema([
-                                        TextInput::make('queue_connection')
-                                            ->label(__('notify::filament.settings.fields.queue_connection'))
-                                            ->helperText(__('notify::filament.settings.fields.queue_connection_help'))
-                                            ->placeholder('redis'),
-
-                                        TextInput::make('queue_name')
-                                            ->label(__('notify::filament.settings.fields.queue_name'))
-                                            ->helperText(__('notify::filament.settings.fields.queue_name_help'))
-                                            ->placeholder('notifications'),
-                                    ]),
-                            ]),
-
                         // Rate Limiting Tab
                         Tab::make('rate_limiting')
                             ->label(__('notify::filament.settings.tabs.rate_limiting'))
@@ -227,7 +203,7 @@ class ManageNotifySettings extends Page implements HasForms
                                             ->helperText(__('notify::filament.settings.fields.rate_limit_per_minute_help'))
                                             ->numeric()
                                             ->minValue(1)
-                                            ->nullable()
+                                            ->default(1000)
                                             ->suffix(__('notify::filament.settings.fields.per_minute')),
 
                                         TextInput::make('rate_limit_per_user_per_hour')
@@ -235,7 +211,7 @@ class ManageNotifySettings extends Page implements HasForms
                                             ->helperText(__('notify::filament.settings.fields.rate_limit_per_user_per_hour_help'))
                                             ->numeric()
                                             ->minValue(1)
-                                            ->nullable()
+                                            ->default(10)
                                             ->suffix(__('notify::filament.settings.fields.per_hour')),
                                     ]),
                             ]),
@@ -307,13 +283,9 @@ class ManageNotifySettings extends Page implements HasForms
             $settings->log_retention_days = (int) ($data['log_retention_days'] ?? 180);
             $settings->log_store_payload = $data['log_store_payload'] ?? false;
 
-            // Queue Settings
-            $settings->queue_connection = $data['queue_connection'] ?? 'redis';
-            $settings->queue_name = $data['queue_name'] ?? 'notifications';
-
             // Rate Limiting
-            $settings->rate_limit_per_minute = $data['rate_limit_per_minute'] ? (int) $data['rate_limit_per_minute'] : null;
-            $settings->rate_limit_per_user_per_hour = $data['rate_limit_per_user_per_hour'] ? (int) $data['rate_limit_per_user_per_hour'] : null;
+            $settings->rate_limit_per_minute = (int) ($data['rate_limit_per_minute'] ?? 1000);
+            $settings->rate_limit_per_user_per_hour = (int) ($data['rate_limit_per_user_per_hour'] ?? 10);
 
             // Default Topic Settings
             $settings->auto_subscribe_to_defaults = $data['auto_subscribe_to_defaults'] ?? true;

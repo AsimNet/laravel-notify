@@ -2,6 +2,7 @@
 
 namespace Asimnet\Notify\Filament;
 
+use Asimnet\Notify\Filament\Pages\ManageNotifySettings;
 use Asimnet\Notify\Filament\Resources\LogResource;
 use Asimnet\Notify\Filament\Resources\TopicResource;
 use Closure;
@@ -76,7 +77,11 @@ class NotifyPlugin implements Plugin
             $resources[] = LogResource::class;
         }
 
-        $panel->resources($resources);
+        $panel
+            ->resources($resources)
+            ->pages([
+                ManageNotifySettings::class,
+            ]);
     }
 
     /**
