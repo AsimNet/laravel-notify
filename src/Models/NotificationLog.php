@@ -30,7 +30,6 @@ class NotificationLog extends Model
 
     protected $fillable = [
         'tenant_id',
-        'campaign_id',
         'user_id',
         'device_token_id',
         'channel',
@@ -82,14 +81,6 @@ class NotificationLog extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(config('auth.providers.users.model', 'App\\Models\\User'));
-    }
-
-    /**
-     * Get the campaign this log belongs to.
-     */
-    public function campaign(): BelongsTo
-    {
-        return $this->belongsTo(Campaign::class);
     }
 
     /**
@@ -182,14 +173,6 @@ class NotificationLog extends Model
     public function scopeForUser(Builder $query, int $userId): Builder
     {
         return $query->where('user_id', $userId);
-    }
-
-    /**
-     * Scope to filter by campaign.
-     */
-    public function scopeForCampaign(Builder $query, int $campaignId): Builder
-    {
-        return $query->where('campaign_id', $campaignId);
     }
 
     /**

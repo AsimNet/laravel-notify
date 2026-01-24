@@ -38,11 +38,6 @@ class NotifySettings extends Settings
     // Default Topic Settings
     public bool $auto_subscribe_to_defaults = true;
 
-    // Campaign Settings
-    public int $campaign_batch_size = 500;
-
-    public int $campaign_retry_attempts = 3;
-
     public static function group(): string
     {
         return 'notify';

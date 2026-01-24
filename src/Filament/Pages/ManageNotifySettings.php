@@ -120,9 +120,6 @@ class ManageNotifySettings extends Page implements HasForms
                 // Default Topic Settings
                 'auto_subscribe_to_defaults' => $settings->auto_subscribe_to_defaults,
 
-                // Campaign Settings
-                'campaign_batch_size' => $settings->campaign_batch_size,
-                'campaign_retry_attempts' => $settings->campaign_retry_attempts,
             ]);
         } catch (Exception $e) {
             Log::error('Error loading notify settings: '.$e->getMessage());
@@ -243,32 +240,18 @@ class ManageNotifySettings extends Page implements HasForms
                                     ]),
                             ]),
 
-                        // Campaign Tab
-                        Tab::make('campaign')
-                            ->label(__('notify::filament.settings.tabs.campaign'))
-                            ->icon(Heroicon::Megaphone)
+                        // Topics Tab
+                        Tab::make('topics')
+                            ->label(__('notify::filament.settings.tabs.topics'))
+                            ->icon(Heroicon::ChatBubbleLeftRight)
                             ->schema([
-                                Section::make(__('notify::filament.settings.sections.campaign'))
-                                    ->description(__('notify::filament.settings.sections.campaign_description'))
+                                Section::make(__('notify::filament.settings.sections.topics'))
+                                    ->description(__('notify::filament.settings.sections.topics_description'))
                                     ->schema([
                                         Toggle::make('auto_subscribe_to_defaults')
                                             ->label(__('notify::filament.settings.fields.auto_subscribe_to_defaults'))
                                             ->helperText(__('notify::filament.settings.fields.auto_subscribe_to_defaults_help'))
                                             ->inline(false),
-
-                                        TextInput::make('campaign_batch_size')
-                                            ->label(__('notify::filament.settings.fields.campaign_batch_size'))
-                                            ->helperText(__('notify::filament.settings.fields.campaign_batch_size_help'))
-                                            ->numeric()
-                                            ->minValue(10)
-                                            ->maxValue(5000),
-
-                                        TextInput::make('campaign_retry_attempts')
-                                            ->label(__('notify::filament.settings.fields.campaign_retry_attempts'))
-                                            ->helperText(__('notify::filament.settings.fields.campaign_retry_attempts_help'))
-                                            ->numeric()
-                                            ->minValue(0)
-                                            ->maxValue(10),
                                     ]),
                             ]),
                     ])
@@ -334,10 +317,6 @@ class ManageNotifySettings extends Page implements HasForms
 
             // Default Topic Settings
             $settings->auto_subscribe_to_defaults = $data['auto_subscribe_to_defaults'] ?? true;
-
-            // Campaign Settings
-            $settings->campaign_batch_size = (int) ($data['campaign_batch_size'] ?? 500);
-            $settings->campaign_retry_attempts = (int) ($data['campaign_retry_attempts'] ?? 3);
 
             $settings->save();
 

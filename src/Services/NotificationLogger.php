@@ -20,7 +20,6 @@ class NotificationLogger
      * @param  string  $channel  Channel used (e.g., 'fcm')
      * @param  int|null  $userId  Recipient user ID
      * @param  string|null  $deviceTokenId  Device token ID (for per-token logging)
-     * @param  int|null  $campaignId  Campaign ID if from a campaign
      * @param  bool  $isTest  Whether this is a test notification
      * @return NotificationLog|null Returns null if logging is disabled
      */
@@ -30,7 +29,6 @@ class NotificationLogger
         string $channel = 'fcm',
         ?int $userId = null,
         ?string $deviceTokenId = null,
-        ?int $campaignId = null,
         bool $isTest = false
     ): ?NotificationLog {
         if (! $this->isEnabled()) {
@@ -47,7 +45,6 @@ class NotificationLogger
 
         return NotificationLog::create([
             'tenant_id' => $this->getCurrentTenantId(),
-            'campaign_id' => $campaignId,
             'user_id' => $userId,
             'device_token_id' => $deviceTokenId,
             'channel' => $channel,
@@ -72,7 +69,6 @@ class NotificationLogger
      * @param  array<string, mixed>  $result  Result with success_count and failure_count
      * @param  string  $channel  Channel used
      * @param  array<int>  $userIds  Array of recipient user IDs
-     * @param  int|null  $campaignId  Campaign ID if from a campaign
      * @param  bool  $isTest  Whether this is a test notification
      */
     public function logBatchSend(
@@ -80,7 +76,6 @@ class NotificationLogger
         array $result,
         string $channel = 'fcm',
         array $userIds = [],
-        ?int $campaignId = null,
         bool $isTest = false
     ): ?NotificationLog {
         if (! $this->isEnabled()) {
@@ -110,7 +105,6 @@ class NotificationLogger
 
         return NotificationLog::create([
             'tenant_id' => $this->getCurrentTenantId(),
-            'campaign_id' => $campaignId,
             'user_id' => count($userIds) === 1 ? $userIds[0] : null,
             'device_token_id' => null, // Batch sends don't track individual tokens
             'channel' => $channel,
@@ -132,14 +126,12 @@ class NotificationLogger
      * @param  NotificationMessage  $message  The notification that was sent
      * @param  array<string, mixed>  $result  Result from topic send
      * @param  string  $topic  Topic that was sent to
-     * @param  int|null  $campaignId  Campaign ID if from a campaign
      * @param  bool  $isTest  Whether this is a test notification
      */
     public function logTopicSend(
         NotificationMessage $message,
         array $result,
         string $topic,
-        ?int $campaignId = null,
         bool $isTest = false
     ): ?NotificationLog {
         if (! $this->isEnabled()) {
@@ -153,7 +145,6 @@ class NotificationLogger
 
         return NotificationLog::create([
             'tenant_id' => $this->getCurrentTenantId(),
-            'campaign_id' => $campaignId,
             'user_id' => null, // Topics don't have a specific user
             'device_token_id' => null,
             'channel' => 'fcm',

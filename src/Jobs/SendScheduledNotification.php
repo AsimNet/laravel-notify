@@ -6,7 +6,6 @@ use Asimnet\Notify\DTOs\NotificationMessage;
 use Asimnet\Notify\Models\ScheduledNotification;
 use Asimnet\Notify\NotifyManager;
 use Asimnet\Notify\Services\NotificationLogger;
-use Asimnet\Notify\Services\TemplateRenderer;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -122,7 +121,6 @@ class SendScheduledNotification implements ShouldQueue
                 channel: $scheduled->channel ?? 'fcm',
                 userId: $scheduled->user_id,
                 deviceTokenId: null,
-                campaignId: null,
                 isTest: $scheduled->is_test ?? false
             );
 
@@ -147,25 +145,12 @@ class SendScheduledNotification implements ShouldQueue
     /**
      * Build the notification message from scheduled notification data.
      *
-     * If a template is attached, renders the template. Otherwise, builds
-     * a message from direct content fields.
+     * بناء رسالة الإشعار من بيانات الإشعار المجدول.
      */
     private function buildMessage(): NotificationMessage
     {
         $scheduled = $this->scheduledNotification;
 
-        // If template is attached, use template rendering
-        if ($scheduled->template_id && $scheduled->template) {
-            /** @var TemplateRenderer $renderer */
-            $renderer = app(TemplateRenderer::class);
-
-            return $renderer->render(
-                $scheduled->template,
-                $scheduled->template_variables ?? []
-            );
-        }
-
-        // Build message from direct content
         $message = NotificationMessage::create(
             $scheduled->title,
             $scheduled->body

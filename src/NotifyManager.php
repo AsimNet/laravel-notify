@@ -5,11 +5,8 @@ namespace Asimnet\Notify;
 use Asimnet\Notify\Contracts\FcmService;
 use Asimnet\Notify\DTOs\NotificationMessage;
 use Asimnet\Notify\Models\DeviceToken;
-use Asimnet\Notify\Models\NotificationTemplate;
 use Asimnet\Notify\Models\ScheduledNotification;
-use Asimnet\Notify\Models\Segment;
 use Asimnet\Notify\Services\NotificationLogger;
-use Asimnet\Notify\Services\TemplateRenderer;
 use DateTimeInterface;
 use Illuminate\Contracts\Foundation\Application;
 use InvalidArgumentException;
@@ -100,13 +97,6 @@ class NotifyManager
             $topic = substr($this->recipients, 6);
 
             return $this->sendToTopic($topic, $message);
-        }
-
-        // Handle segment: prefix
-        if (is_string($this->recipients) && str_starts_with($this->recipients, 'segment:')) {
-            $segmentSlug = substr($this->recipients, 8);
-
-            return $this->sendToSegment($segmentSlug, $message);
         }
 
         // Handle single user ID
@@ -206,104 +196,6 @@ class NotifyManager
     }
 
     /**
-     * Send notification to all users matching a segment.
-     *
-     * إرسال إشعار إلى جميع المستخدمين المطابقين للشريحة.
-     *
-     * @param  Segment|string|int  $segment  Segment model, slug, or ID
-     * @param  NotificationMessage  $message  The notification content
-     * @return array{success: bool, success_count: int, failure_count: int, user_count: int, error: ?string}
-     */
-    public function sendToSegment(Segment|string|int $segment, NotificationMessage $message): array
-    {
-        // Resolve segment from various input types
-        if (is_string($segment)) {
-            $segment = Segment::active()->where('slug', $segment)->first();
-
-            if (! $segment) {
-                return [
-                    'success' => false,
-                    'success_count' => 0,
-                    'failure_count' => 0,
-                    'user_count' => 0,
-                    'error' => __('notify::notify.segment_not_found'),
-                ];
-            }
-        } elseif (is_int($segment)) {
-            $segment = Segment::active()->find($segment);
-
-            if (! $segment) {
-                return [
-                    'success' => false,
-                    'success_count' => 0,
-                    'failure_count' => 0,
-                    'user_count' => 0,
-                    'error' => __('notify::notify.segment_not_found'),
-                ];
-            }
-        }
-
-        // Verify segment is active
-        if (! $segment->is_active) {
-            return [
-                'success' => false,
-                'success_count' => 0,
-                'failure_count' => 0,
-                'user_count' => 0,
-                'error' => __('notify::notify.segment_inactive'),
-            ];
-        }
-
-        // Resolve user IDs from segment conditions
-        $userIds = $segment->resolveUserIds();
-
-        if (empty($userIds)) {
-            return [
-                'success' => false,
-                'success_count' => 0,
-                'failure_count' => 0,
-                'user_count' => 0,
-                'error' => __('notify::notify.no_users_in_segment'),
-            ];
-        }
-
-        // Send to resolved users using existing method
-        $result = $this->sendToUsers($userIds, $message);
-
-        // Add user_count to result
-        $result['user_count'] = count($userIds);
-
-        return $result;
-    }
-
-    /**
-     * Send notification from template to all users matching a segment.
-     *
-     * إرسال إشعار من قالب إلى جميع المستخدمين المطابقين للشريحة.
-     *
-     * @param  string  $templateSlug  The template slug to use
-     * @param  Segment|string|int  $segment  Segment model, slug, or ID
-     * @param  array<string, mixed>  $variables  Variables for template replacement
-     * @return array{success: bool, success_count: int, failure_count: int, user_count: int, error: ?string}
-     *
-     * @throws InvalidArgumentException If template not found
-     */
-    public function sendFromTemplateToSegment(string $templateSlug, Segment|string|int $segment, array $variables = []): array
-    {
-        $template = NotificationTemplate::active()->bySlug($templateSlug)->first();
-
-        if (! $template) {
-            throw new InvalidArgumentException(
-                __('notify::notify.template_not_found').": {$templateSlug}"
-            );
-        }
-
-        $message = $this->getTemplateRenderer()->render($template, $variables);
-
-        return $this->sendToSegment($segment, $message);
-    }
-
-    /**
      * Send notification to a topic.
      *
      * All subscribers of the topic will receive the notification.
@@ -394,80 +286,11 @@ class NotifyManager
     }
 
     /**
-     * Send notification using a template.
-     *
-     * إرسال إشعار باستخدام قالب.
-     *
-     * @param  string  $templateSlug  The template slug to use
-     * @param  mixed  $recipients  User ID, array of user IDs, or 'topic:slug'
-     * @param  array<string, mixed>  $variables  Variables for template replacement
-     * @return array<string, mixed>
-     *
-     * @throws InvalidArgumentException If template not found
-     */
-    public function sendFromTemplate(string $templateSlug, mixed $recipients, array $variables = []): array
-    {
-        $template = NotificationTemplate::active()->bySlug($templateSlug)->first();
-
-        if (! $template) {
-            throw new InvalidArgumentException(
-                __('notify::notify.template_not_found').": {$templateSlug}"
-            );
-        }
-
-        $message = $this->getTemplateRenderer()->render($template, $variables);
-
-        return $this->to($recipients)->send($message);
-    }
-
-    /**
-     * Send notification using a template to a single user.
-     *
-     * Automatically builds user variables from the user model.
-     *
-     * إرسال إشعار باستخدام قالب إلى مستخدم واحد.
-     * يبني متغيرات المستخدم تلقائياً من نموذج المستخدم.
-     *
-     * @param  string  $templateSlug  The template slug to use
-     * @param  mixed  $user  User model (must have id, name, email properties)
-     * @param  array<string, mixed>  $extraVariables  Additional variables
-     * @return array<string, mixed>
-     *
-     * @throws InvalidArgumentException If template not found
-     */
-    public function sendFromTemplateToUser(string $templateSlug, mixed $user, array $extraVariables = []): array
-    {
-        $template = NotificationTemplate::active()->bySlug($templateSlug)->first();
-
-        if (! $template) {
-            throw new InvalidArgumentException(
-                __('notify::notify.template_not_found').": {$templateSlug}"
-            );
-        }
-
-        $renderer = $this->getTemplateRenderer();
-        $variables = $renderer->buildVariablesForUser($user, $extraVariables);
-        $message = $renderer->render($template, $variables);
-
-        return $this->sendToUser($user->id, $message);
-    }
-
-    /**
      * Get the FCM service instance.
      */
     protected function getFcmService(): FcmService
     {
         return $this->app->make(FcmService::class);
-    }
-
-    /**
-     * Get the template renderer service.
-     *
-     * الحصول على خدمة عرض القوالب.
-     */
-    protected function getTemplateRenderer(): TemplateRenderer
-    {
-        return $this->app->make(TemplateRenderer::class);
     }
 
     /**
@@ -558,43 +381,6 @@ class NotifyManager
     }
 
     /**
-     * Schedule a notification from a template.
-     *
-     * جدولة إشعار من قالب.
-     *
-     * @param  string  $templateSlug  The template to use / القالب المستخدم
-     * @param  int  $userId  The user to send to / المستخدم المراد الإرسال إليه
-     * @param  DateTimeInterface  $scheduledAt  When to send / وقت الإرسال
-     * @param  array<string, mixed>  $variables  Template variables / متغيرات القالب
-     *
-     * @throws InvalidArgumentException If template not found
-     */
-    public function scheduleFromTemplate(
-        string $templateSlug,
-        int $userId,
-        DateTimeInterface $scheduledAt,
-        array $variables = []
-    ): ScheduledNotification {
-        $template = NotificationTemplate::active()->bySlug($templateSlug)->first();
-
-        if (! $template) {
-            throw new InvalidArgumentException(
-                __('notify::notify.template_not_found').": {$templateSlug}"
-            );
-        }
-
-        return ScheduledNotification::create([
-            'tenant_id' => $this->getCurrentTenantId(),
-            'user_id' => $userId,
-            'channel' => 'fcm',
-            'template_id' => $template->id,
-            'template_variables' => $variables,
-            'scheduled_at' => $scheduledAt,
-            'is_test' => false,
-        ]);
-    }
-
-    /**
      * Get the current tenant ID if tenancy is enabled.
      *
      * الحصول على معرف المستأجر الحالي إذا كان تعدد المستأجرين مفعلاً.
@@ -659,44 +445,8 @@ class NotifyManager
         ];
 
         // Log as test notification with is_test = true
-        $this->getLogger()->logBatchSend($message, $result, 'fcm', [$user->id], null, true);
+        $this->getLogger()->logBatchSend($message, $result, 'fcm', [$user->id], true);
 
         return $response;
-    }
-
-    /**
-     * Send a test notification from a template to self.
-     *
-     * إرسال إشعار اختباري من قالب إلى النفس.
-     *
-     * @param  string  $templateSlug  The template to use / القالب المستخدم
-     * @param  array<string, mixed>  $variables  Template variables (user variables auto-populated) / متغيرات القالب
-     * @return array{success: bool, success_count: int, failure_count: int, error: ?string}
-     *
-     * @throws InvalidArgumentException If no authenticated user or template not found
-     */
-    public function sendTestFromTemplateToSelf(string $templateSlug, array $variables = []): array
-    {
-        $user = auth()->user();
-
-        if (! $user) {
-            throw new InvalidArgumentException(
-                __('notify::notify.test_requires_auth')
-            );
-        }
-
-        $template = NotificationTemplate::active()->bySlug($templateSlug)->first();
-
-        if (! $template) {
-            throw new InvalidArgumentException(
-                __('notify::notify.template_not_found').": {$templateSlug}"
-            );
-        }
-
-        $renderer = $this->getTemplateRenderer();
-        $allVariables = $renderer->buildVariablesForUser($user, $variables);
-        $message = $renderer->render($template, $allVariables);
-
-        return $this->sendTestToSelf($message);
     }
 }

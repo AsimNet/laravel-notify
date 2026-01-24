@@ -7,7 +7,6 @@ use Asimnet\Notify\DTOs\NotificationMessage;
 use Asimnet\Notify\Facades\Notify;
 use Asimnet\Notify\Models\DeviceToken;
 use Asimnet\Notify\Models\NotificationLog;
-use Asimnet\Notify\Models\NotificationTemplate;
 use Asimnet\Notify\Testing\FakeFcmService;
 use Asimnet\Notify\Tests\TestCase;
 use Illuminate\Support\Facades\Auth;
@@ -105,32 +104,6 @@ class TestNotificationTest extends TestCase
         $this->assertEquals(3, NotificationLog::onlyTest()->count());
     }
 
-    public function test_send_test_from_template_to_self(): void
-    {
-        $user = $this->createUser();
-
-        DeviceToken::factory()->create([
-            'user_id' => $user->id,
-            'token' => 'template_test_token',
-        ]);
-
-        $template = NotificationTemplate::factory()->create([
-            'slug' => 'test-template',
-            'title' => 'Hello {user.name}!',
-            'body' => 'This is a test for {user.email}',
-        ]);
-
-        Auth::login($user);
-
-        $result = Notify::sendTestFromTemplateToSelf('test-template');
-
-        $this->assertTrue($result['success']);
-
-        $log = NotificationLog::latest()->first();
-
-        $this->assertTrue($log->is_test);
-    }
-
     public function test_test_notification_with_no_devices_returns_error(): void
     {
         $user = $this->createUser();
@@ -194,21 +167,5 @@ class TestNotificationTest extends TestCase
         foreach ($testLogs as $log) {
             $this->assertTrue($log->is_test);
         }
-    }
-
-    public function test_send_test_from_nonexistent_template_throws(): void
-    {
-        $user = $this->createUser();
-
-        DeviceToken::factory()->create([
-            'user_id' => $user->id,
-            'token' => 'invalid_template_token',
-        ]);
-
-        Auth::login($user);
-
-        $this->expectException(InvalidArgumentException::class);
-
-        Notify::sendTestFromTemplateToSelf('nonexistent-template');
     }
 }

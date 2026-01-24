@@ -6,7 +6,6 @@ use Asimnet\Notify\Contracts\FcmService;
 use Asimnet\Notify\DTOs\NotificationMessage;
 use Asimnet\Notify\Facades\Notify;
 use Asimnet\Notify\Models\DeviceToken;
-use Asimnet\Notify\Models\NotificationTemplate;
 use Asimnet\Notify\Models\ScheduledNotification;
 use Asimnet\Notify\Testing\FakeFcmService;
 use Asimnet\Notify\Tests\TestCase;
@@ -150,33 +149,6 @@ class ScheduledNotificationTest extends TestCase
 
         $this->assertCount(1, $dueNotifications);
         $this->assertEquals($due->id, $dueNotifications->first()->id);
-    }
-
-    public function test_schedule_from_template(): void
-    {
-        $user = $this->createUser();
-
-        $template = NotificationTemplate::factory()->create([
-            'slug' => 'test-template',
-            'title' => 'Template Title',
-            'body' => 'Template body for {custom}',
-        ]);
-
-        $scheduledAt = now()->addHours(1);
-
-        $scheduled = Notify::scheduleFromTemplate(
-            'test-template',
-            $user->id,
-            $scheduledAt,
-            ['custom' => 'value']
-        );
-
-        $this->assertDatabaseHas('notify_scheduled_notifications', [
-            'user_id' => $user->id,
-            'template_id' => $template->id,
-        ]);
-
-        $this->assertEquals(['custom' => 'value'], $scheduled->template_variables);
     }
 
     public function test_scheduled_notification_with_image_and_payload(): void

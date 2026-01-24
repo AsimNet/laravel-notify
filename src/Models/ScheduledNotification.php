@@ -47,8 +47,6 @@ class ScheduledNotification extends Model
         'image_url',
         'action_url',
         'payload',
-        'template_id',
-        'template_variables',
         'scheduled_at',
         'sent_at',
         'cancelled_at',
@@ -63,7 +61,6 @@ class ScheduledNotification extends Model
     {
         return [
             'payload' => 'array',
-            'template_variables' => 'array',
             'scheduled_at' => 'datetime',
             'sent_at' => 'datetime',
             'cancelled_at' => 'datetime',
@@ -95,16 +92,6 @@ class ScheduledNotification extends Model
     public function cancelledByUser(): BelongsTo
     {
         return $this->belongsTo(config('auth.providers.users.model', 'App\\Models\\User'), 'cancelled_by');
-    }
-
-    /**
-     * Get the notification template.
-     *
-     * الحصول على قالب الإشعار.
-     */
-    public function template(): BelongsTo
-    {
-        return $this->belongsTo(NotificationTemplate::class, 'template_id');
     }
 
     /**
