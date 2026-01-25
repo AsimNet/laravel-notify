@@ -1,6 +1,6 @@
 # Laravel Notify
 
-A comprehensive Laravel package for push notifications with Firebase Cloud Messaging (FCM), featuring a complete Filament v4 admin panel.
+A Laravel package for push notifications with Firebase Cloud Messaging (FCM), featuring a Filament v4 admin panel.
 
 ## Features
 
@@ -9,12 +9,9 @@ A comprehensive Laravel package for push notifications with Firebase Cloud Messa
 - **Filament v4 Admin Panel** - Complete management interface
 - **Device Token Management** - Register and manage device tokens
 - **Topic Subscriptions** - Subscribe users to topics for broadcast notifications
-- **Notification Templates** - Create reusable templates with variables
-- **User Segmentation** - Target users with flexible condition-based segments
-- **Campaign Management** - Create, schedule, and track notification campaigns
 - **Scheduled Notifications** - Queue notifications for future delivery
 - **Comprehensive Logging** - Track all sent notifications with detailed logs
-- **Rate Limiting** - Protect against notification spam
+- **Rate Limiting** - Protect against notification spam (configurable per minute and per user)
 - **Queue Support** - Process notifications in the background
 - **Encrypted Credentials** - Secure storage for FCM service account
 
@@ -37,7 +34,30 @@ Publish the configuration:
 php artisan vendor:publish --tag=notify-config
 ```
 
-Run the migrations:
+### Multi-tenant Setup (Stancl/Tenancy)
+
+Add the package migration path to your `config/tenancy.php`:
+
+```php
+'migration_parameters' => [
+    '--force' => true,
+    '--path' => [
+        database_path('migrations/tenant'),
+        base_path('packages/notify/database/migrations/tenant'),
+    ],
+    '--realpath' => true,
+],
+```
+
+Then run tenant migrations:
+
+```bash
+php artisan tenants:migrate
+```
+
+### Single-tenant Setup
+
+Run the migrations directly:
 
 ```bash
 php artisan migrate
@@ -66,7 +86,9 @@ public function panel(Panel $panel): Panel
     return $panel
         ->plugins([
             NotifyPlugin::make()
-                ->navigationGroup('Notifications'),
+                ->navigationGroup('Notifications')
+                ->topicResource(true)  // Enable/disable topic management
+                ->logResource(true),   // Enable/disable log viewer
         ]);
 }
 ```
@@ -97,22 +119,23 @@ Notify::to($user)
     ->body('This is a test notification')
     ->send();
 
+// Send to multiple users
+Notify::to($users)
+    ->title('Announcement')
+    ->body('Important update for everyone')
+    ->send();
+
 // Send to a topic
 Notify::toTopic('news')
     ->title('Breaking News')
     ->body('Something important happened')
     ->send();
 
-// Send to a segment
-Notify::toSegment($segment)
-    ->title('Special Offer')
-    ->body('Just for you!')
-    ->send();
-
-// Using a template
+// With custom data payload
 Notify::to($user)
-    ->template('welcome')
-    ->variables(['name' => $user->name])
+    ->title('New Message')
+    ->body('You have a new message')
+    ->data(['screen' => 'messages', 'id' => 123])
     ->send();
 ```
 
@@ -129,11 +152,23 @@ POST /api/notify/devices
 }
 ```
 
+Remove device token:
+
+```
+DELETE /api/notify/devices/{device}
+```
+
 Subscribe to topics:
 
 ```
 POST /api/notify/topics/{topic}/subscribe
 POST /api/notify/topics/{topic}/unsubscribe
+```
+
+Get user's subscribed topics:
+
+```
+GET /api/notify/topics/subscribed
 ```
 
 ### Artisan Commands
@@ -143,6 +178,20 @@ Process scheduled notifications:
 ```bash
 php artisan notify:process-scheduled
 ```
+
+## Settings
+
+The following settings can be configured via the Filament admin panel:
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| FCM Enabled | Enable/disable FCM sending | true |
+| Logging Enabled | Enable notification logging | true |
+| Log Retention Days | Days to keep logs | 180 |
+| Store Payload | Store notification payloads in logs | false |
+| Rate Limit Per Minute | Max notifications per minute | 1000 |
+| Rate Limit Per User/Hour | Max notifications per user per hour | 10 |
+| Auto Subscribe to Defaults | Auto-subscribe new devices to default topics | true |
 
 ## Testing
 
