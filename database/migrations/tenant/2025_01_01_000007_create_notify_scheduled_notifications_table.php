@@ -39,11 +39,9 @@ return new class extends Migration
             $table->string('action_url', 500)->nullable();
             $table->json('payload')->nullable(); // Custom data payload
 
-            // Template-based content
-            $table->foreignId('template_id')
-                ->nullable()
-                ->constrained(config('notify.tables.templates', 'notify_templates'))
-                ->nullOnDelete();
+            // Template reference (stored as string, not FK - templates feature removed)
+            // حقل القالب (مخزن كنص، ليس مفتاح أجنبي - تم إزالة ميزة القوالب)
+            $table->string('template_id')->nullable();
             $table->json('template_variables')->nullable(); // Variables for template rendering
 
             // Scheduling timestamp

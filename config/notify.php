@@ -91,13 +91,10 @@ return [
     |
     */
     'tables' => [
-        'campaigns' => 'notify_campaigns',
-        'templates' => 'notify_templates',
         'device_tokens' => 'notify_device_tokens',
         'topics' => 'notify_topics',
         'topic_subscriptions' => 'notify_topic_subscriptions',
         'logs' => 'notify_logs',
         'scheduled_notifications' => 'notify_scheduled_notifications',
-        'segments' => 'notify_segments',
     ],
 ];

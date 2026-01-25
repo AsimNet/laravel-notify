@@ -31,11 +31,61 @@ class NotifyServiceProvider extends PackageServiceProvider
             ->hasCommand(\Asimnet\Notify\Console\Commands\ProcessScheduledNotifications::class)
             ->hasInstallCommand(function (InstallCommand $command) {
                 $command
-                    ->publishConfigFile();
+                    ->publishConfigFile()
+                    ->publishMigrations();
             });
+    }
 
-        // Note: Tenant migrations are loaded via config/tenancy.php migration_parameters
-        // Settings migrations are in packages/notify/database/migrations/ (central DB)
+    /**
+     * Register package services and publish migrations.
+     *
+     * تسجيل خدمات الحزمة ونشر الهجرات.
+     */
+    public function boot(): void
+    {
+        parent::boot();
+
+        $this->publishMigrations();
+    }
+
+    /**
+     * Publish migrations for settings and tenant databases.
+     *
+     * نشر الهجرات لإعدادات الحزمة وقواعد بيانات المستأجرين.
+     *
+     * Settings migrations: Package settings (Spatie Settings), run on main database
+     * Tenant migrations: Per-tenant tables (device_tokens, topics, logs, etc.)
+     *
+     * Usage:
+     * - php artisan vendor:publish --tag=notify-migrations (all)
+     * - php artisan vendor:publish --tag=notify-migrations-settings (settings only)
+     * - php artisan vendor:publish --tag=notify-migrations-tenant (tenant only)
+     *
+     * For multi-tenancy with Stancl/Tenancy:
+     * 1. Publish tenant migrations to your tenant path
+     * 2. Or add package path directly to config/tenancy.php migration_parameters:
+     *    base_path('vendor/asimnet/laravel-notify/database/migrations/tenant')
+     */
+    protected function publishMigrations(): void
+    {
+        $settingsMigrations = __DIR__.'/../database/migrations';
+        $tenantMigrations = __DIR__.'/../database/migrations/tenant';
+
+        // Publish settings migrations (main database)
+        $this->publishes([
+            $settingsMigrations => database_path('migrations'),
+        ], 'notify-migrations-settings');
+
+        // Publish tenant migrations (per-tenant database)
+        $this->publishes([
+            $tenantMigrations => database_path('migrations/tenant'),
+        ], 'notify-migrations-tenant');
+
+        // Publish all migrations
+        $this->publishes([
+            $settingsMigrations => database_path('migrations'),
+            $tenantMigrations => database_path('migrations/tenant'),
+        ], 'notify-migrations');
     }
 
     public function packageRegistered(): void
