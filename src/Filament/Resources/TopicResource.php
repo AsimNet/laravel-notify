@@ -34,6 +34,16 @@ class TopicResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    /**
+     * Disable global search to prevent errors when table doesn't exist.
+     *
+     * تعطيل البحث الشامل لمنع الأخطاء عندما لا يوجد الجدول.
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return [];
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return NotifyPlugin::get()->getNavigationGroup();

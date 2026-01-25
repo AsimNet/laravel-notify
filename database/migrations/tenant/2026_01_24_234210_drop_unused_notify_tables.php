@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -19,12 +18,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Drop foreign key from logs to campaigns first
-        Schema::table('notify_logs', function (Blueprint $table) {
-            $table->dropForeign(['campaign_id']);
-            $table->dropColumn('campaign_id');
-        });
-
         // Drop segments (no dependencies)
         Schema::dropIfExists('notify_segments');
 

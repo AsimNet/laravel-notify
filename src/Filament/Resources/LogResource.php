@@ -40,6 +40,16 @@ class LogResource extends Resource
     protected static ?string $recordTitleAttribute = 'title';
 
     /**
+     * Disable global search to prevent errors when table doesn't exist.
+     *
+     * تعطيل البحث الشامل لمنع الأخطاء عندما لا يوجد الجدول.
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return [];
+    }
+
+    /**
      * Disable create functionality (read-only resource).
      *
      * تعطيل إنشاء سجلات جديدة (مورد للقراءة فقط).

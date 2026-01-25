@@ -20,12 +20,6 @@ return new class extends Migration
             // Nullable tenant_id for optional multi-tenancy
             $table->string('tenant_id')->nullable()->index();
 
-            // Campaign relationship (nullable for direct sends)
-            $table->foreignId('campaign_id')
-                ->nullable()
-                ->constrained(config('notify.tables.campaigns', 'notify_campaigns'))
-                ->nullOnDelete();
-
             // User relationship (nullable if user is deleted)
             $table->foreignId('user_id')
                 ->nullable()
@@ -66,7 +60,6 @@ return new class extends Migration
             // Composite indexes for common queries
             $table->index(['tenant_id', 'status']);
             $table->index(['tenant_id', 'channel']);
-            $table->index('campaign_id');
             $table->index('user_id');
             $table->index('created_at'); // For log retention cleanup
             $table->index('is_test');
