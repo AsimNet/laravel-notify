@@ -184,6 +184,7 @@ return [
     'error_topic_not_found' => 'الموضوع غير موجود',
     'error_segment_empty' => 'الشريحة فارغة',
     'error_unauthorized' => 'غير مصرح لك بهذا الإجراء',
+    'error_fcm_not_configured' => 'لم يتم تكوين بيانات اعتماد Firebase Cloud Messaging لهذا المستأجر',
     'error_token_invalid' => 'رمز الجهاز غير صالح',
     'error_token_unregistered' => 'الجهاز غير مسجل',
     'error_quota_exceeded' => 'تم تجاوز حد الارسال',

@@ -94,23 +94,11 @@ class NotifyServiceProvider extends PackageServiceProvider
             return new NotifyManager($app);
         });
 
-        // Register FcmService - use fake in testing, real implementation otherwise
-        $this->app->singleton(\Asimnet\Notify\Contracts\FcmService::class, function ($app) {
-            // Use fake service in testing environment
-            if ($app->environment('testing')) {
-                return new \Asimnet\Notify\Testing\FakeFcmService;
-            }
-
-            // Use real service with Firebase Messaging
-            // Requires kreait/laravel-firebase to be configured
-            if ($app->bound(\Kreait\Firebase\Contract\Messaging::class)) {
-                return new \Asimnet\Notify\Services\FcmMessageService(
-                    $app->make(\Kreait\Firebase\Contract\Messaging::class)
-                );
-            }
-
-            // Fallback to fake if Firebase not configured
-            return new \Asimnet\Notify\Testing\FakeFcmService;
+        // Register FcmService - tenant-aware service that lazily resolves
+        // Firebase Messaging per tenant from NotifySettings credentials.
+        // Tests that need FakeFcmService can bind it via $this->mock() or $this->app->instance().
+        $this->app->singleton(\Asimnet\Notify\Contracts\FcmService::class, function () {
+            return new \Asimnet\Notify\Services\TenantAwareFcmService;
         });
     }
 
