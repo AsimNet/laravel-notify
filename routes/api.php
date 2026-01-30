@@ -11,10 +11,13 @@ use Illuminate\Support\Facades\Route;
 |
 | API routes for the Notify notification center package.
 | All routes are prefixed with /api/notify and protected by auth:api.
+| Middleware stack is configurable via notify.route_middleware.
 |
 */
 
-Route::middleware(['api', 'auth:api'])->prefix('api/notify')->group(function () {
+$middleware = config('notify.route_middleware', ['api', 'auth:api']);
+
+Route::middleware($middleware)->prefix('api/notify')->group(function () {
 
     // Device Token Management
     // GET    /api/notify/devices           - List user's devices
