@@ -23,7 +23,6 @@ class TopicResource extends JsonResource
             'slug' => $this->slug,
             'description' => $this->description,
             'is_public' => $this->is_public,
-            'subscriber_count' => $this->subscriber_count,
             'is_subscribed' => $this->when(
                 $request->user(),
                 fn () => $this->isSubscribedByUser($request->user())
