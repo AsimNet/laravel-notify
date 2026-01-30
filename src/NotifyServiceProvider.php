@@ -9,8 +9,10 @@ use Asimnet\Notify\Events\TopicUnsubscribed;
 use Asimnet\Notify\Listeners\CleanupDeletedDeviceFromFcm;
 use Asimnet\Notify\Listeners\SyncDeviceToDefaultTopics;
 use Asimnet\Notify\Listeners\SyncTopicSubscriptionToFcm;
+use Illuminate\Notifications\ChannelManager;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Route;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
 use Spatie\LaravelPackageTools\Package;
@@ -100,6 +102,26 @@ class NotifyServiceProvider extends PackageServiceProvider
         $this->app->singleton(\Asimnet\Notify\Contracts\FcmService::class, function () {
             return new \Asimnet\Notify\Services\TenantAwareFcmService;
         });
+
+        // Register SmsManager for resolving SMS drivers (extensible).
+        $this->app->singleton(SmsManager::class, function ($app) {
+            return new SmsManager($app);
+        });
+
+        // Bind SmsChannel so it can be resolved by the notification channel manager.
+        $this->app->bind(\Asimnet\Notify\Channels\SmsChannel::class, function ($app) {
+            return new \Asimnet\Notify\Channels\SmsChannel($app->make(SmsManager::class));
+        });
+
+        // Bind WbaChannel if wba-filament is installed.
+        if (class_exists(\Asimnet\WbaFilament\Services\WbaService::class)) {
+            $this->app->bind(\Asimnet\Notify\Channels\WbaChannel::class, function ($app) {
+                return new \Asimnet\Notify\Channels\WbaChannel(
+                    $app->make(\Asimnet\WbaFilament\Services\WbaService::class),
+                    $app->make(\Asimnet\Notify\Services\NotificationLogger::class)
+                );
+            });
+        }
     }
 
     public function packageBooted(): void
@@ -110,6 +132,7 @@ class NotifyServiceProvider extends PackageServiceProvider
 
         $this->registerEventListeners();
         $this->registerRouteModelBindings();
+        $this->extendNotificationChannels();
     }
 
     /**
@@ -202,5 +225,22 @@ class NotifyServiceProvider extends PackageServiceProvider
             );
         }
         Config::set('horizon.environments', $environments);
+    }
+
+    /**
+     * Register the custom SMS channel with Laravel's notification manager.
+     */
+    protected function extendNotificationChannels(): void
+    {
+        Notification::resolved(function (ChannelManager $manager) {
+            $manager->extend('sms', function ($app) {
+                return $app->make(\Asimnet\Notify\Channels\SmsChannel::class);
+            });
+            if (class_exists(\Asimnet\Notify\Channels\WbaChannel::class)) {
+                $manager->extend('wba', function ($app) {
+                    return $app->make(\Asimnet\Notify\Channels\WbaChannel::class);
+                });
+            }
+        });
     }
 }

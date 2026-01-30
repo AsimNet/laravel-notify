@@ -1,6 +1,9 @@
 <?php
 
 use Asimnet\Notify\Http\Controllers\DeviceTokenController;
+use Asimnet\Notify\Http\Controllers\SmsWebhookController;
+use Asimnet\Notify\Http\Controllers\TaqnyatWebhookController;
+use Asimnet\Notify\Http\Controllers\TopicPreferencesController;
 use Asimnet\Notify\Http\Controllers\TopicSubscriptionController;
 use Illuminate\Support\Facades\Route;
 
@@ -41,4 +44,22 @@ Route::middleware($middleware)->prefix('api/notify')->group(function () {
     Route::post('topics/{topic}/unsubscribe', [TopicSubscriptionController::class, 'unsubscribe'])
         ->name('notify.topics.unsubscribe');
 
+    // Topic channel preferences (for mobile apps)
+    Route::get('topics/preferences', [TopicPreferencesController::class, 'show'])
+        ->name('notify.topics.preferences.show');
+
+    Route::patch('topics/{topic}/preferences', [TopicPreferencesController::class, 'update'])
+        ->name('notify.topics.preferences.update');
+
 });
+
+// Public SMS delivery webhook (provider callbacks)
+$webhookMiddleware = config('notify.sms.webhook_middleware', ['api']);
+Route::middleware($webhookMiddleware)
+    ->prefix('api/notify')
+    ->post('webhooks/sms', SmsWebhookController::class)
+    ->name('notify.webhooks.sms');
+Route::middleware($webhookMiddleware)
+    ->prefix('api/notify')
+    ->post('webhooks/taqnyat', TaqnyatWebhookController::class)
+    ->name('notify.webhooks.sms.taqnyat');

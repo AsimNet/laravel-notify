@@ -30,6 +30,7 @@ abstract class TestCase extends Orchestra
     protected function getPackageProviders($app): array
     {
         return [
+            \Spatie\LaravelSettings\LaravelSettingsServiceProvider::class,
             NotifyServiceProvider::class,
         ];
     }
@@ -78,6 +79,12 @@ abstract class TestCase extends Orchestra
 
         // Configure user model
         $app['config']->set('auth.providers.users.model', TestUser::class);
+
+        // Spatie Laravel Settings configuration for tests
+        $app['config']->set('settings.migrations_paths', [
+            __DIR__.'/../database/migrations',
+        ]);
+        $app['config']->set('settings.cache.enabled', false);
     }
 
     /**
@@ -85,8 +92,12 @@ abstract class TestCase extends Orchestra
      */
     protected function defineDatabaseMigrations(): void
     {
+        // Spatie Laravel Settings migration (settings table)
+        $this->loadMigrationsFrom(__DIR__.'/../vendor/spatie/laravel-settings/database/migrations');
+
         // Run package migrations
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations/tenant');
 
         // Create users table for testing
         $this->app['db']->connection()->getSchemaBuilder()->create('users', function ($table) {
@@ -95,6 +106,7 @@ abstract class TestCase extends Orchestra
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('phone')->nullable();
             $table->rememberToken();
             $table->string('gender')->nullable();
             $table->string('city')->nullable();

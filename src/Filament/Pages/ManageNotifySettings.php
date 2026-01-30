@@ -5,7 +5,9 @@ namespace Asimnet\Notify\Filament\Pages;
 use Asimnet\Notify\Filament\NotifyPlugin;
 use Asimnet\Notify\Settings\NotifySettings;
 use Exception;
+use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -104,6 +106,16 @@ class ManageNotifySettings extends Page implements HasForms
                 'fcm_enabled' => $settings->fcm_enabled,
                 'fcm_credentials_json' => null,
 
+                // SMS Settings
+                'sms_enabled' => $settings->sms_enabled,
+                'sms_default_driver' => $settings->sms_default_driver,
+                'sms_credentials_json' => $settings->sms_credentials,
+
+                // WBA Settings (write-only credentials)
+                'wba_enabled' => $settings->wba_enabled,
+                'wba_default_language' => $settings->wba_default_language,
+                'wba_credentials' => $this->decodeCredentials($settings->wba_credentials),
+
                 // Logging Settings
                 'logging_enabled' => $settings->logging_enabled,
                 'log_retention_days' => $settings->log_retention_days,
@@ -190,6 +202,70 @@ class ManageNotifySettings extends Page implements HasForms
                                     ]),
                             ]),
 
+                        // SMS Tab
+                        Tab::make('sms')
+                            ->label(__('notify::filament.settings.tabs.sms'))
+                            ->icon(Heroicon::ChatBubbleBottomCenterText)
+                            ->schema([
+                                Section::make(__('notify::filament.settings.sections.sms'))
+                                    ->description(__('notify::filament.settings.sections.sms_description'))
+                                    ->schema([
+                                        Toggle::make('sms_enabled')
+                                            ->label(__('notify::filament.settings.fields.sms_enabled'))
+                                            ->helperText(__('notify::filament.settings.fields.sms_enabled_help'))
+                                            ->inline(false),
+
+                                        Select::make('sms_default_driver')
+                                            ->label(__('notify::filament.settings.fields.sms_default_driver'))
+                                            ->helperText(__('notify::filament.settings.fields.sms_default_driver_help'))
+                                            ->options($this->getSmsDriverOptions())
+                                            ->searchable()
+                                            ->preload(),
+
+                                        Textarea::make('sms_credentials_json')
+                                            ->label(__('notify::filament.settings.fields.sms_credentials_json'))
+                                            ->helperText(__('notify::filament.settings.fields.sms_credentials_json_help'))
+                                            ->placeholder(__('notify::filament.settings.fields.sms_credentials_json_placeholder'))
+                                            ->rows(6)
+                                            ->columnSpanFull(),
+                                    ]),
+                            ]),
+
+                        // WBA Tab
+                        Tab::make('wba')
+                            ->label(__('notify::filament.settings.tabs.wba'))
+                            ->icon(Heroicon::ChatBubbleOvalLeftEllipsis)
+                            ->schema([
+                                Section::make(__('notify::filament.settings.sections.wba'))
+                                    ->description(__('notify::filament.settings.sections.wba_description'))
+                                    ->schema([
+                                        Toggle::make('wba_enabled')
+                                            ->label(__('notify::filament.settings.fields.wba_enabled'))
+                                            ->helperText(__('notify::filament.settings.fields.wba_enabled_help'))
+                                            ->inline(false),
+
+                                        TextInput::make('wba_default_language')
+                                            ->label(__('notify::filament.settings.fields.wba_default_language'))
+                                            ->helperText(__('notify::filament.settings.fields.wba_default_language_help'))
+                                            ->default('ar'),
+
+                                        KeyValue::make('wba_credentials')
+                                            ->label(__('notify::filament.settings.fields.wba_credentials'))
+                                            ->helperText(__('notify::filament.settings.fields.wba_credentials_json_help'))
+                                            ->keyLabel('Key')
+                                            ->valueLabel('Value')
+                                            ->default([
+                                                'page_token' => null,
+                                                'phone_number_id' => null,
+                                                'app_secret' => null,
+                                                'verify_token' => null,
+                                            ])
+                                            ->reorderable(false)
+                                            ->addActionLabel(__('notify::filament.settings.fields.wba_credentials'))
+                                            ->columnSpanFull(),
+                                    ]),
+                            ]),
+
                         // Rate Limiting Tab
                         Tab::make('rate_limiting')
                             ->label(__('notify::filament.settings.tabs.rate_limiting'))
@@ -254,6 +330,49 @@ class ManageNotifySettings extends Page implements HasForms
     }
 
     /**
+     * Decode credentials string to array for KeyValue.
+     *
+     * @return array<string, string|null>
+     */
+    protected function decodeCredentials(?string $json): array
+    {
+        if (! $json) {
+            return [
+                'page_token' => null,
+                'phone_number_id' => null,
+                'app_secret' => null,
+                'verify_token' => null,
+            ];
+        }
+
+        $data = json_decode($json, true);
+
+        return is_array($data) ? $data : [
+            'page_token' => null,
+            'phone_number_id' => null,
+            'app_secret' => null,
+            'verify_token' => null,
+        ];
+    }
+
+    /**
+     * SMS driver options from config.
+     *
+     * @return array<string, string>
+     */
+    protected function getSmsDriverOptions(): array
+    {
+        $drivers = config('notify.sms.drivers', []);
+
+        $options = [];
+        foreach ($drivers as $key => $driver) {
+            $options[$key] = $driver['name'] ?? $key;
+        }
+
+        return $options;
+    }
+
+    /**
      * Save the settings.
      *
      * حفظ الإعدادات.
@@ -283,9 +402,24 @@ class ManageNotifySettings extends Page implements HasForms
             $settings->log_retention_days = (int) ($data['log_retention_days'] ?? 180);
             $settings->log_store_payload = $data['log_store_payload'] ?? false;
 
+            // SMS Settings
+            $settings->sms_enabled = (bool) ($data['sms_enabled'] ?? false);
+            $settings->sms_default_driver = $data['sms_default_driver'] ?? null;
+
+            if (! empty($data['sms_credentials_json'])) {
+                $settings->sms_credentials = $data['sms_credentials_json'];
+            }
+
             // Rate Limiting
             $settings->rate_limit_per_minute = (int) ($data['rate_limit_per_minute'] ?? 1000);
             $settings->rate_limit_per_user_per_hour = (int) ($data['rate_limit_per_user_per_hour'] ?? 10);
+
+            // WBA Settings
+            $settings->wba_enabled = (bool) ($data['wba_enabled'] ?? false);
+            $settings->wba_default_language = $data['wba_default_language'] ?? 'ar';
+            $settings->wba_credentials = ! empty($data['wba_credentials'])
+                ? json_encode($data['wba_credentials'])
+                : null;
 
             // Default Topic Settings
             $settings->auto_subscribe_to_defaults = $data['auto_subscribe_to_defaults'] ?? true;

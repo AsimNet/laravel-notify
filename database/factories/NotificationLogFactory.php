@@ -13,7 +13,6 @@ class NotificationLogFactory extends Factory
     {
         return [
             'tenant_id' => null,
-            'campaign_id' => null,
             'user_id' => null,
             'device_token_id' => null,
             'channel' => 'fcm',

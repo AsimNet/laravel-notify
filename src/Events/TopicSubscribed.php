@@ -23,5 +23,9 @@ class TopicSubscribed
     public function __construct(
         public readonly TopicSubscription $subscription,
         public readonly array $deviceTokens
-    ) {}
+    ) {
+        $this->subscription->fcm_enabled ??= true;
+        $this->subscription->sms_enabled ??= false;
+        $this->subscription->wba_enabled ??= false;
+    }
 }

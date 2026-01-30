@@ -17,12 +17,18 @@ class TopicSubscription extends Model
         'topic_id',
         'user_id',
         'fcm_synced',
+        'fcm_enabled',
+        'sms_enabled',
+        'wba_enabled',
     ];
 
     protected function casts(): array
     {
         return [
             'fcm_synced' => 'boolean',
+            'fcm_enabled' => 'boolean',
+            'sms_enabled' => 'boolean',
+            'wba_enabled' => 'boolean',
         ];
     }
 

@@ -5,13 +5,13 @@ namespace Asimnet\Notify\Filament\Resources;
 use Asimnet\Notify\Filament\NotifyPlugin;
 use Asimnet\Notify\Filament\Resources\LogResource\Pages;
 use Asimnet\Notify\Models\NotificationLog;
+use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
-use Filament\Forms\Components\DatePicker;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -152,6 +152,9 @@ class LogResource extends Resource
                     ->label(__('notify::filament.logs.filters.channel'))
                     ->options([
                         'fcm' => 'FCM',
+                        'sms' => 'SMS',
+                        'whatsapp' => 'WhatsApp',
+                        'telegram' => 'Telegram',
                     ]),
 
                 TernaryFilter::make('is_test')

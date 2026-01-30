@@ -48,6 +48,11 @@ class SyncTopicSubscriptionToFcm implements ShouldQueue
         $subscription = $event->subscription;
         $deviceTokens = $event->deviceTokens;
 
+        // Respect per-channel toggle
+        if (isset($subscription->fcm_enabled) && ! $subscription->fcm_enabled) {
+            return;
+        }
+
         if (empty($deviceTokens)) {
             Log::debug('Notify: No device tokens to subscribe to topic', [
                 'topic_id' => $subscription->topic_id,

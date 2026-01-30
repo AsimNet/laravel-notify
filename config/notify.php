@@ -97,4 +97,55 @@ return [
         'logs' => 'notify_logs',
         'scheduled_notifications' => 'notify_scheduled_notifications',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | SMS Configuration / إعدادات الرسائل القصيرة
+    |--------------------------------------------------------------------------
+    |
+    | Define SMS drivers and defaults. Drivers can be extended at runtime
+    | via SmsManager::extend() from the host application.
+    |
+    */
+    'sms' => [
+        'enabled' => env('NOTIFY_SMS_ENABLED', false),
+        'default_driver' => env('NOTIFY_SMS_DRIVER', 'http_generic'),
+        // Optional callable to supply per-tenant or dynamic credentials:
+        // fn (): array => ['driver_key' => ['auth' => ['token' => '...']]]
+        'credentials_resolver' => null,
+        'drivers' => [
+            // Example config-driven HTTP driver
+            'http_generic' => [
+                'type' => 'http',
+                'name' => 'http-generic',
+                'method' => 'post',
+                'url' => env('NOTIFY_SMS_HTTP_URL', ''),
+                'body_type' => 'json', // json|form|query
+                'fields' => [
+                    'to' => 'to',
+                    'message' => 'message',
+                    'sender' => 'sender',
+                ],
+                'auth' => [
+                    'type' => 'bearer', // bearer|basic|none
+                    'token' => env('NOTIFY_SMS_HTTP_TOKEN'),
+                    // for basic: username/password
+                ],
+                'response_keys' => [
+                    'id' => 'messageId',
+                ],
+            ],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | WhatsApp Business (WBA) Configuration
+    |--------------------------------------------------------------------------
+    */
+    'wba' => [
+        'enabled' => env('NOTIFY_WBA_ENABLED', false),
+        'default_language' => env('NOTIFY_WBA_LANGUAGE', 'ar'),
+        'webhook_middleware' => ['api'],
+    ],
 ];

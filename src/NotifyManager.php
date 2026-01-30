@@ -92,6 +92,11 @@ class NotifyManager
             throw new InvalidArgumentException('Recipients are required. Call to() first.');
         }
 
+        // If an SMS channel is explicitly requested, dispatch via SMS helpers.
+        if (in_array('sms', $this->channels, true)) {
+            return $this->sendSmsEntryPoint($message);
+        }
+
         // Handle topic: prefix
         if (is_string($this->recipients) && str_starts_with($this->recipients, 'topic:')) {
             $topic = substr($this->recipients, 6);
@@ -113,6 +118,143 @@ class NotifyManager
     }
 
     /**
+     * Send notification via a specific channel (SMS/FCM/etc.) for a single user ID.
+     *
+     * @return array<string, mixed>
+     */
+    protected function sendToUserVia(string $channel, int $userId, NotificationMessage $message): array
+    {
+        return match ($channel) {
+            'sms' => $this->sendSmsToUser($userId, $message),
+            default => $this->sendToUser($userId, $message),
+        };
+    }
+
+    /**
+     * Placeholder for SMS routing; resolves tokens/phones and delegates to SmsManager.
+     */
+    protected function sendSmsToUser(int $userId, NotificationMessage $message): array
+    {
+        $phone = $this->resolveUserPhone($userId);
+
+        if (! $phone) {
+            return [
+                'success' => false,
+                'success_count' => 0,
+                'failure_count' => 0,
+                'error' => 'No phone number found for user',
+            ];
+        }
+
+        /** @var \Asimnet\Notify\SmsManager $sms */
+        $sms = $this->app->make(\Asimnet\Notify\SmsManager::class);
+
+        if (! $sms->enabled()) {
+            return [
+                'success' => false,
+                'success_count' => 0,
+                'failure_count' => 0,
+                'error' => 'SMS channel is disabled',
+            ];
+        }
+
+        $result = $sms->driver()->send($phone, $this->renderSmsBody($message), [
+            'title' => $message->title,
+        ])->toArray();
+
+        $this->getLogger()->logSend($message, $result, 'sms', $userId, null, false);
+
+        return [
+            'success' => $result['success'] ?? false,
+            'success_count' => ($result['success'] ?? false) ? 1 : 0,
+            'failure_count' => ($result['success'] ?? false) ? 0 : 1,
+            'error' => $result['error'] ?? null,
+        ];
+    }
+
+    /**
+     * Entry point when send() is called with via('sms').
+     */
+    protected function sendSmsEntryPoint(NotificationMessage $message): array
+    {
+        // Single ID
+        if (is_int($this->recipients)) {
+            return $this->sendSmsToUser($this->recipients, $message);
+        }
+
+        // Multiple IDs
+        if (is_array($this->recipients)) {
+            $success = 0;
+            $failure = 0;
+            foreach ($this->recipients as $userId) {
+                $result = $this->sendSmsToUser((int) $userId, $message);
+                $result['success'] ? $success++ : $failure++;
+            }
+
+            return [
+                'success' => $success > 0 && $failure === 0,
+                'success_count' => $success,
+                'failure_count' => $failure,
+                'error' => $failure > 0 ? "{$failure} failed" : null,
+            ];
+        }
+
+        throw new InvalidArgumentException('Invalid recipients format for SMS');
+    }
+
+    /**
+     * Resolve a phone number from the user model.
+     */
+    protected function resolveUserPhone(int $userId): ?string
+    {
+        $userClass = config('auth.providers.users.model');
+
+        if (! $userClass || ! class_exists($userClass)) {
+            return null;
+        }
+
+        /** @var \Illuminate\Database\Eloquent\Model $user */
+        $user = $userClass::find($userId);
+
+        if (! $user) {
+            return null;
+        }
+
+        if (method_exists($user, 'routeNotificationForSms')) {
+            return $user->routeNotificationForSms();
+        }
+
+        $phone = $user->getAttribute('phone');
+        if ($phone) {
+            return $phone;
+        }
+
+        $mobile = $user->getAttribute('mobile');
+        if ($mobile) {
+            return $mobile;
+        }
+
+        $number = $user->getAttribute('phone_number');
+        if ($number) {
+            return $number;
+        }
+
+        return null;
+    }
+
+    /**
+     * Render a minimal SMS body from NotificationMessage.
+     */
+    protected function renderSmsBody(NotificationMessage $message): string
+    {
+        if ($message->title && $message->body) {
+            return "{$message->title}: {$message->body}";
+        }
+
+        return $message->body ?? $message->title ?? '';
+    }
+
+    /**
      * Send notification to a single user by ID.
      *
      * @param  int  $userId  The user ID to send to
@@ -121,6 +263,10 @@ class NotifyManager
      */
     public function sendToUser(int $userId, NotificationMessage $message): array
     {
+        if (in_array('sms', $this->channels, true)) {
+            return $this->sendSmsToUser($userId, $message);
+        }
+
         $tokens = DeviceToken::where('user_id', $userId)
             ->pluck('token')
             ->toArray();

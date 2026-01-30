@@ -1,0 +1,30 @@
+{
+  "get_preferences_response": {
+    "data": [
+      {
+        "topic_id": 4,
+        "fcm_enabled": true,
+        "sms_enabled": false,
+        "wba_enabled": true
+      },
+      {
+        "topic_id": 7,
+        "fcm_enabled": true,
+        "sms_enabled": true,
+        "wba_enabled": false
+      }
+    ]
+  },
+  "patch_request": {
+    "sms_enabled": true,
+    "wba_enabled": false
+  },
+  "patch_response": {
+    "data": {
+      "topic_id": 4,
+      "fcm_enabled": true,
+      "sms_enabled": true,
+      "wba_enabled": false
+    }
+  }
+}

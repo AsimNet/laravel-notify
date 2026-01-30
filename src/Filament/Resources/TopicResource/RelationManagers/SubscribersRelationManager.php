@@ -8,6 +8,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
@@ -44,6 +45,24 @@ class SubscribersRelationManager extends RelationManager
                     ->label(__('notify::filament.topics.synced'))
                     ->boolean(),
 
+                ToggleColumn::make('fcm_enabled')
+                    ->label('FCM')
+                    ->sortable()
+                    ->onIcon('heroicon-o-bell')
+                    ->offIcon('heroicon-o-bell-slash'),
+
+                ToggleColumn::make('sms_enabled')
+                    ->label('SMS')
+                    ->sortable()
+                    ->onIcon('heroicon-o-chat-bubble-bottom-center-text')
+                    ->offIcon('heroicon-o-chat-bubble-bottom-center-text'),
+
+                ToggleColumn::make('wba_enabled')
+                    ->label('WBA')
+                    ->sortable()
+                    ->onIcon('heroicon-o-chat-bubble-left-ellipsis')
+                    ->offIcon('heroicon-o-chat-bubble-left-ellipsis'),
+
                 TextColumn::make('created_at')
                     ->label(__('notify::filament.topics.subscribed_at'))
                     ->dateTime()
@@ -52,6 +71,9 @@ class SubscribersRelationManager extends RelationManager
             ->filters([
                 TernaryFilter::make('fcm_synced')
                     ->label(__('notify::filament.topics.synced')),
+                TernaryFilter::make('fcm_enabled')->label('FCM'),
+                TernaryFilter::make('sms_enabled')->label('SMS'),
+                TernaryFilter::make('wba_enabled')->label('WBA'),
             ])
             ->actions([
                 DeleteAction::make()

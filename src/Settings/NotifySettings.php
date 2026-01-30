@@ -38,6 +38,20 @@ class NotifySettings extends Settings
     // Default Topic Settings
     public bool $auto_subscribe_to_defaults = true;
 
+    // SMS Settings
+    public bool $sms_enabled = false;
+
+    public ?string $sms_default_driver = null;
+
+    public ?string $sms_credentials = null;
+
+    // WBA Settings (mirror minimal fields; main config still in wba-filament)
+    public bool $wba_enabled = false;
+
+    public string $wba_default_language = 'ar';
+
+    public ?string $wba_credentials = null; // JSON blob: page_token, phone_number_id, app_secret, verify_token
+
     public static function group(): string
     {
         return 'notify';
