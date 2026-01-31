@@ -135,6 +135,30 @@ return [
                     'id' => 'messageId',
                 ],
             ],
+
+            // Taqnyat SMS driver
+            'taqnyat' => [
+                'type' => 'http',
+                'name' => 'taqnyat',
+                'method' => 'post',
+                'url' => env('TAQNYAT_SMS_URL', 'https://api.taqnyat.sa/v1/messages'),
+                'body_type' => 'json',
+                'fields' => [
+                    'to' => 'recipients',
+                    'message' => 'body',
+                    'sender' => 'sender',
+                ],
+                'auth' => [
+                    'type' => 'bearer',
+                    'token' => env('TAQNYAT_SMS_TOKEN'),
+                ],
+                'defaults' => [
+                    'sender' => env('TAQNYAT_SMS_SENDER'),
+                ],
+                'response_keys' => [
+                    'id' => 'messageId',
+                ],
+            ],
         ],
     ],
 
