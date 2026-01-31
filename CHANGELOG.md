@@ -9,3 +9,5 @@
 - Added SMS and WBA webhooks (generic + Taqnyat adapter).
 - Updated Filament settings page, README, and provided frontend API schemas/mocks.
 
+## Unreleased
+- Added tenant settings migrations (create settings table + SMS/WBA keys) to fix missing-property errors when saving settings in tenant context.
