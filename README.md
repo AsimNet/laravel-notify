@@ -111,6 +111,16 @@ Notify::schedule($userId, $message, now()->addHour());
 
 Scheduling is currently supported for FCM only; SMS/WBA always send immediately.
 
+### Routing phone numbers (important)
+
+Notify does **not** guess phone fields. You must supply a destination:
+
+- Implement `routeNotificationForSms($notification)` on your notifiable (e.g., User) to return an E.164 number for SMS.
+- Implement `routeNotificationForWba()` to return the raw phone for WhatsApp (e.g., `9665xxxxxxx`).
+- Or return `to` inside `toSms()` / `toWba()` on the notification itself.
+
+If neither is provided, the send is skipped with an exception.
+
 ### Topic channel preferences (per user)
 
 Each topic subscription stores per-channel flags:
