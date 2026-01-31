@@ -4,8 +4,6 @@ namespace Asimnet\Notify\Channels;
 
 use Asimnet\Notify\DTOs\SmsSendResult;
 use Asimnet\Notify\SmsManager;
-use Illuminate\Database\Eloquent\MissingAttributeException;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
@@ -30,13 +28,10 @@ class SmsChannel
         $driver = $payload['driver'] ?? null;
 
         if (! $message || ! $to) {
-            Log::warning('SMS: missing message or recipient', [
-                'has_message' => (bool) $message,
-                'to' => $to,
-                'notifiable' => is_object($notifiable) ? get_class($notifiable) : gettype($notifiable),
-            ]);
-
-            return;
+            throw new InvalidArgumentException(
+                'SMS notification requires a message and destination phone. '.
+                'Provide "to" in toSms() or implement routeNotificationForSms($notification).'
+            );
         }
 
         $smsDriver = $this->smsManager->driver($driver);
@@ -63,26 +58,6 @@ class SmsChannel
             return $notifiable->routeNotificationForVonage($notification);
         }
 
-        foreach (['mobile', 'phone', 'whatsapp_phone', 'phone_number'] as $attr) {
-            $value = $this->safeGetAttribute($notifiable, $attr);
-            if (! empty($value)) {
-                return $value;
-            }
-        }
-
         return null;
-    }
-
-    protected function safeGetAttribute(mixed $notifiable, string $attr): ?string
-    {
-        if ($notifiable instanceof Model) {
-            return $notifiable->getAttributes()[$attr] ?? null;
-        }
-
-        try {
-            return $notifiable->{$attr} ?? null;
-        } catch (MissingAttributeException) {
-            return null;
-        }
     }
 }
