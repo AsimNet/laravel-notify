@@ -4,6 +4,8 @@ namespace Asimnet\Notify\Channels;
 
 use Asimnet\Notify\Services\NotificationLogger;
 use Asimnet\WbaFilament\Services\WbaService;
+use Illuminate\Database\Eloquent\MissingAttributeException;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
@@ -80,11 +82,28 @@ class WbaChannel
         }
 
         foreach (['phone', 'mobile', 'whatsapp_phone', 'phone_number'] as $attr) {
-            if (isset($notifiable->{$attr})) {
-                return $notifiable->{$attr};
+            $value = $this->safeGetAttribute($notifiable, $attr);
+            if (! empty($value)) {
+                return $value;
             }
         }
 
         return null;
+    }
+
+    protected function safeGetAttribute(mixed $notifiable, string $attr): ?string
+    {
+        // If it's a model, use raw attributes to avoid MissingAttributeException.
+        if ($notifiable instanceof Model) {
+            $attrs = $notifiable->getAttributes();
+
+            return $attrs[$attr] ?? null;
+        }
+
+        try {
+            return $notifiable->{$attr} ?? null;
+        } catch (MissingAttributeException) {
+            return null;
+        }
     }
 }
