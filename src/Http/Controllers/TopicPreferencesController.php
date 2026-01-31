@@ -2,6 +2,7 @@
 
 namespace Asimnet\Notify\Http\Controllers;
 
+use Asimnet\Notify\Models\Topic;
 use Asimnet\Notify\Models\TopicSubscription;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,7 +28,7 @@ class TopicPreferencesController extends Controller
         return response()->json(['data' => $prefs]);
     }
 
-    public function update(Request $request, int $topicId): JsonResponse
+    public function update(Request $request, Topic $topic): JsonResponse
     {
         $userId = $request->user()->getKey();
 
@@ -38,7 +39,7 @@ class TopicPreferencesController extends Controller
         ]);
 
         $sub = TopicSubscription::firstOrCreate([
-            'topic_id' => $topicId,
+            'topic_id' => $topic->getKey(),
             'user_id' => $userId,
         ], [
             'fcm_synced' => false,
