@@ -140,7 +140,7 @@ return [
             'sms' => 'SMS Settings',
             'sms_description' => 'Enable SMS and set the default driver/credentials',
             'wba' => 'WhatsApp Business Settings',
-            'wba_description' => 'Enable WBA channel and provide Meta credentials (JSON)',
+            'wba_description' => 'Enable the WBA channel. If wba-filament is already configured, leave credentials empty and Notify will reuse it.',
         ],
         'fields' => [
             'fcm_enabled' => 'Enable Firebase',
@@ -180,7 +180,7 @@ return [
             'wba_default_language' => 'Default WBA Language',
             'wba_default_language_help' => 'Template language when none is provided',
             'wba_credentials' => 'WBA Credentials',
-            'wba_credentials_json_help' => 'Provide keys: page_token, phone_number_id, app_secret, verify_token',
+            'wba_credentials_json_help' => 'Optional. If wba-filament is configured, leave empty. Otherwise provide keys: page_token, phone_number_id, app_secret, verify_token',
         ],
         'fcm_configured' => 'Firebase Configured',
         'fcm_not_configured' => 'Firebase Not Configured',

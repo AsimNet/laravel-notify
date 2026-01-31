@@ -61,7 +61,7 @@ public function toSms($notifiable): array
 ### WhatsApp Business (WBA) Quick Start
 
 - Requires the sibling package `asimnet/wba-filament` (already present in `packages/wba-filament`).
-- Enable WBA in `config/notify.php` (`wba.enabled => true`) and configure WBA via that package.
+- Enable WBA in `config/notify.php` (`wba.enabled => true`). If `wba-filament` is already configured, you do **not** need to re-enter credentials in Notify; it reuses the same configuration.
 - Use the notification channel:
 
 ```php

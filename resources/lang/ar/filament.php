@@ -137,7 +137,7 @@ return [
             'sms' => 'إعدادات الرسائل القصيرة',
             'sms_description' => 'تفعيل الرسائل القصيرة وتحديد المزود والبيانات',
             'wba' => 'إعدادات واتساب بزنس',
-            'wba_description' => 'تفعيل قناة واتساب بزنس وتحديد بيانات الاعتماد (JSON)',
+            'wba_description' => 'تفعيل قناة واتساب بزنس. إذا تم إعداد wba-filament مسبقاً فاترك الحقول فارغة وسيتم استخدامها تلقائياً.',
         ],
         'fields' => [
             'fcm_enabled' => 'تفعيل Firebase',
@@ -177,7 +177,7 @@ return [
             'wba_default_language' => 'اللغة الافتراضية',
             'wba_default_language_help' => 'لغة القوالب عند عدم تحديدها',
             'wba_credentials' => 'بيانات اعتماد واتساب',
-            'wba_credentials_json_help' => 'اكتب المفاتيح: page_token, phone_number_id, app_secret, verify_token',
+            'wba_credentials_json_help' => 'اختياري. إذا كان wba-filament معد مسبقاً فاتركه فارغاً، وإلا أدخل المفاتيح: page_token, phone_number_id, app_secret, verify_token',
         ],
         'fcm_configured' => 'تم تكوين Firebase',
         'fcm_not_configured' => 'لم يتم تكوين Firebase',
