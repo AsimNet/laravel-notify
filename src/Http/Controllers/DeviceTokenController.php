@@ -37,7 +37,7 @@ class DeviceTokenController extends Controller
     }
 
     /**
-     * Register a new device token.
+     * Register or update a device token (upsert by token value).
      *
      * POST /api/notify/devices
      */
@@ -53,23 +53,27 @@ class DeviceTokenController extends Controller
         // Get tenant ID if multi-tenant
         $tenantId = $this->getTenantId();
 
-        $device = DeviceToken::create([
-            'tenant_id' => $tenantId,
-            'user_id' => $user->id,
-            'token' => $request->validated('token'),
-            'platform' => $request->validated('platform'),
-            'device_name' => $request->validated('device_name'),
-            'last_active_at' => now(),
-        ]);
+        $device = DeviceToken::updateOrCreate(
+            ['token' => $request->validated('token')],
+            [
+                'tenant_id' => $tenantId,
+                'user_id' => $user->id,
+                'platform' => $request->validated('platform'),
+                'device_name' => $request->validated('device_name'),
+                'last_active_at' => now(),
+            ]
+        );
 
-        // Dispatch event for default topic subscription
-        DeviceTokenRegistered::dispatch($device, $isFirstDevice);
+        // Dispatch event for default topic subscription (only for new devices)
+        if ($device->wasRecentlyCreated) {
+            DeviceTokenRegistered::dispatch($device, $isFirstDevice);
+        }
 
         return response()->json([
             'success' => true,
             'message' => __('notify::notify.api.device_registered'),
             'data' => new DeviceTokenResource($device),
-        ], 201);
+        ], $device->wasRecentlyCreated ? 201 : 200);
     }
 
     /**

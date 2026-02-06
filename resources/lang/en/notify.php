@@ -219,6 +219,7 @@ return [
         'device_deleted' => 'Device deleted successfully',
         'subscribed_to_topic' => 'Subscribed to topic successfully',
         'unsubscribed_from_topic' => 'Unsubscribed from topic successfully',
+        'notification_read' => 'Notification marked as read',
     ],
 
     // Notification sending messages

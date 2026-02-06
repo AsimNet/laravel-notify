@@ -7,9 +7,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * API resource for device tokens.
- *
- * SECURITY: Never exposes the actual FCM token in responses.
- * Only returns device metadata for user management.
  */
 class DeviceTokenResource extends JsonResource
 {
@@ -22,12 +19,12 @@ class DeviceTokenResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'token' => $this->token,
             'device_name' => $this->device_name,
             'platform' => $this->platform,
             'platform_label' => $this->getPlatformLabel(),
             'last_active_at' => $this->last_active_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
-            // Note: token is intentionally NOT exposed for security
         ];
     }
 

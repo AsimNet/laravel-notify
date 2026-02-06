@@ -1,6 +1,7 @@
 <?php
 
 use Asimnet\Notify\Http\Controllers\DeviceTokenController;
+use Asimnet\Notify\Http\Controllers\NotificationController;
 use Asimnet\Notify\Http\Controllers\SmsWebhookController;
 use Asimnet\Notify\Http\Controllers\TaqnyatWebhookController;
 use Asimnet\Notify\Http\Controllers\TopicPreferencesController;
@@ -50,6 +51,15 @@ Route::middleware($middleware)->prefix('api/notify')->group(function () {
 
     Route::patch('topics/{topic}/preferences', [TopicPreferencesController::class, 'update'])
         ->name('notify.topics.preferences.update');
+
+    // Notification History
+    // GET  /api/notify/notifications                    - List user's notifications
+    // POST /api/notify/notifications/{notification}/read - Mark notification as read
+    Route::get('notifications', [NotificationController::class, 'index'])
+        ->name('notify.notifications.index');
+
+    Route::post('notifications/{notification}/read', [NotificationController::class, 'markAsRead'])
+        ->name('notify.notifications.read');
 
 });
 

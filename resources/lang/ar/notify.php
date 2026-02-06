@@ -219,6 +219,7 @@ return [
         'device_deleted' => 'تم حذف الجهاز بنجاح',
         'subscribed_to_topic' => 'تم الاشتراك في الموضوع بنجاح',
         'unsubscribed_from_topic' => 'تم إلغاء الاشتراك من الموضوع بنجاح',
+        'notification_read' => 'تم تعليم الإشعار كمقروء',
     ],
 
     // Notification sending messages

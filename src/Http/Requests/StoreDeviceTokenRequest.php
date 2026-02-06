@@ -24,16 +24,6 @@ class StoreDeviceTokenRequest extends FormRequest
                 'string',
                 'min:100',  // FCM tokens are typically 150+ characters
                 'max:500',
-                Rule::unique(config('notify.tables.device_tokens', 'notify_device_tokens'), 'token')
-                    ->where(function ($query) {
-                        // Scope uniqueness to tenant if multi-tenant
-                        $tenantId = $this->getTenantId();
-                        if ($tenantId) {
-                            $query->where('tenant_id', $tenantId);
-                        } else {
-                            $query->whereNull('tenant_id');
-                        }
-                    }),
             ],
             'platform' => [
                 'required',
@@ -54,7 +44,6 @@ class StoreDeviceTokenRequest extends FormRequest
             'token.required' => __('notify::notify.validation.token_required'),
             'token.min' => __('notify::notify.validation.token_invalid'),
             'token.max' => __('notify::notify.validation.token_invalid'),
-            'token.unique' => __('notify::notify.validation.token_already_registered'),
             'platform.required' => __('notify::notify.validation.platform_required'),
             'platform.in' => __('notify::notify.validation.platform_invalid'),
             'device_name.max' => __('notify::notify.validation.device_name_too_long'),
@@ -68,25 +57,5 @@ class StoreDeviceTokenRequest extends FormRequest
             'platform' => __('notify::notify.platform'),
             'device_name' => __('notify::notify.device_name'),
         ];
-    }
-
-    /**
-     * Get the current tenant ID if available.
-     */
-    protected function getTenantId(): ?string
-    {
-        if (! config('notify.tenancy.enabled', false)) {
-            return null;
-        }
-
-        try {
-            if (function_exists('tenant') && tenant()) {
-                return tenant()->getTenantKey();
-            }
-        } catch (\Exception $e) {
-            // Tenant context not available
-        }
-
-        return null;
     }
 }
